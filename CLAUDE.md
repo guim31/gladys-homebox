@@ -32,15 +32,20 @@ pushing.
 
 ```
 index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+src/app.js                        registers every SDK handler on the hub (shared with the tests)
+src/hub.js                        the link to Homebox: timer, devices, states, triggers, status, search
+src/devices.js                    Homebox summary / locations -> Gladys devices and states
+src/homebox/client.js             REST API (login or API key, 0.21 and 0.26 paths), errors by kind
+src/homebox/model.js              CSV export, maintenance, location tree -> plain values; summary
+src/store.js                      /data/homebox-state.json: what the triggers already announced
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/widgets.js                    dashboard widget (manifest `widgets`)
+src/texts.js                      every text produced by the container, in four languages
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (same sections)
+test/                             node --test, SDK fake Gladys + fake Homebox (test/helpers/)
+test/fixtures/homebox/<version>/  bodies recorded on real Homebox 0.26.2 and 0.21.0
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,12 +75,42 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German and Spanish: action
+  messages, manifest texts, widget content, feature names, and
+  `docs/{en,fr,de,es}.md`, kept in sync (`test/i18n.test.js`).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
 ---
+
+## Homebox
+
+- **Two API generations.** Homebox 0.26 merged items and locations into
+  "entities": `/items/export`, `/items?q=`, `/locations/tree` became
+  `/entities/export`, `/entities?q=`, `/entities/tree` (404 on the other
+  version). `/groups`, `/groups/statistics`, `/maintenance?status=scheduled`
+  are shared, except `totalLabels` renamed `totalTags`. The client tries the
+  0.26 path and falls back on a 404, once.
+- **Authentication.** `POST /users/login` returns `token: "Bearer XXX"` (scheme
+  included). A wrong password is a 401 on 0.26 but a **500** with the JSON
+  string `"invalid username or password"` on 0.21. API keys (`hb_...`, sent as
+  `Bearer hb_...`) exist from 0.26 only; the image refuses to start without
+  `HBOX_AUTH_API_KEY_PEPPER` (32 bytes or more). An expired login token is a
+  401: the client logs in once more.
+- **Warranties.** The item summaries (`/entities`, `/items`) do not carry
+  `warrantyExpires`: the CSV export is the only list with every warranty in
+  one request. In 0.26 it also lists the locations (`HB.url` = `/location/…`),
+  and `HB.location` is the full path (`Garage / Shelf`). Dates are calendar
+  days, compared with the local day of Gladys (TZ).
+- `/groups/statistics/locations` sums the price **without** the quantity and
+  counts archived items: the location devices use the tree with items and the
+  export instead. `/groups/statistics` (`totalItemPrice`) does multiply by the
+  quantity and leaves archived items out.
+- `GET /maintenance` without `status` is a 500 on 0.26: always pass
+  `status=scheduled`.
+- Testing with Docker: `ghcr.io/sysadminsmedia/homebox:<version>` on port
+  7745, `HBOX_AUTH_API_KEY_PEPPER` for 0.26; `POST /users/register` creates the
+  first user, with default locations (Garage, Kitchen…).
 
 # Notes du mainteneur (guim31)
 

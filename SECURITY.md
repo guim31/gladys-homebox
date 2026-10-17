@@ -30,6 +30,15 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+What the integration holds: the Homebox address, an API key or the e-mail and
+password of a Homebox user, all kept by Gladys in the integration
+configuration (never logged, never written to `/data`); the login token Homebox
+returns, in memory only. `/data` holds a small JSON file listing the
+warranties and maintenance already announced by the scene triggers (Homebox
+ids and dates). The container only talks to the Homebox address, over HTTP or
+HTTPS, and only reads: it never writes to Homebox.
+
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+and Homebox itself (see the
+[Homebox repository](https://github.com/sysadminsmedia/homebox)).

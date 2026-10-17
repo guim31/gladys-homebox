@@ -1,169 +1,125 @@
 // -----------------------------------------------------------------------------
-// Dashboard widgets (SDK v0.14+, Gladys 5.1+).
-//
-// A widget puts the integration's own data on the Gladys dashboard without a
-// dedicated core widget. The manifest `widgets` field declares its identity
-// (key, label, icon, optional per-instance `settings`); at runtime the
-// integration returns a DECLARATIVE content — `text`, `value`, `gauge`,
-// `status`, `chart`, `card-list`, `image`, `button` — that the core renders
-// with its own theme, dark mode and translations. No HTML, no CSS.
-//
-// Each entry of WIDGETS is keyed by the widget `key` and exposes:
-//   - get(gladys, { settings, language, units, config }): the content,
-//     registered by index.js with `gladys.onWidgetGet(key, ...)`;
-//   - action(gladys, { actionKey, params, settings, config }) (optional): a
-//     tapped `button` carrying an `action`, registered with
-//     `gladys.onWidgetAction`.
-//
-// Check your contents in the tests with `validateWidgetContent` (exported by
-// the SDK, see test/widgets.test.js), or run with DEBUG=gladys-integration-sdk
-// to have the SDK log every violation of the vocabulary and the budget.
+// The "Home inventory" dashboard widget: four tiles (items, total value,
+// warranties ending soon, maintenance due) and the list of what comes next —
+// maintenance overdue or upcoming, warranties ending — the soonest first.
+// Read only: no button.
 // -----------------------------------------------------------------------------
 
-import {
-  createLogger,
-  DEVICE_FEATURE_CATEGORIES,
-  DEVICE_TRANSPORTS,
-  WIDGET_COLORS,
-} from '@gladysassistant/integration-sdk';
-import { identifyDevice } from './devices/index.js';
-import { weatherStation } from './devices/weatherStation.js';
-import { plug } from './devices/plug.js';
-import { light } from './devices/light.js';
+import { WIDGET_COLORS } from '@gladysassistant/integration-sdk';
+import { WIDGET_KEY } from './hub.js';
+import { currencySymbol, when } from './texts.js';
 
-const logger = createLogger({ name: 'widgets' });
+export const MAX_ITEMS = 8;
 
-// Widget key, as declared in the manifest `widgets` field.
-export const DEMO_STATUS_WIDGET = 'demo_status';
-
-// Keys of the `button` actions the demo_status content declares.
-const DEMO_STATUS_ACTIONS = { IDENTIFY_LIGHT: 'identify_light' };
-
-// How the plug transport reads in the status list.
-const TRANSPORT_STATUS = {
-  [DEVICE_TRANSPORTS.LOCAL]: { value: { en: 'Local', fr: 'Locale' }, color: WIDGET_COLORS.SUCCESS },
-  [DEVICE_TRANSPORTS.CLOUD]: { value: { en: 'Cloud', fr: 'Cloud' }, color: WIDGET_COLORS.INFO },
-  [DEVICE_TRANSPORTS.UNREACHABLE]: {
-    value: { en: 'Unreachable', fr: 'Injoignable' },
-    color: WIDGET_COLORS.DANGER,
+export const TEXT = {
+  items: { en: 'Items', fr: 'Objets', de: 'Gegenstände', es: 'Objetos' },
+  value: { en: 'Value', fr: 'Valeur', de: 'Wert', es: 'Valor' },
+  warranties: { en: 'Warranties', fr: 'Garanties', de: 'Garantien', es: 'Garantías' },
+  maintenance: { en: 'Maintenance', fr: 'Entretiens', de: 'Wartungen', es: 'Mantenimientos' },
+  warranty_badge: { en: 'Warranty', fr: 'Garantie', de: 'Garantie', es: 'Garantía' },
+  maintenance_badge: { en: 'Maintenance', fr: 'Entretien', de: 'Wartung', es: 'Mantenimiento' },
+  warranty_title: {
+    en: 'Warranty ends',
+    fr: 'Fin de garantie',
+    de: 'Garantieende',
+    es: 'Fin de garantía',
+  },
+  nothing: {
+    en: 'No maintenance due and no warranty ending soon.',
+    fr: 'Aucun entretien à faire et aucune garantie qui expire bientôt.',
+    de: 'Keine Wartung fällig und keine Garantie, die bald endet.',
+    es: 'Ningún mantenimiento pendiente y ninguna garantía a punto de vencer.',
+  },
+  waiting: {
+    en: 'Waiting for Homebox: check the configuration of the integration.',
+    fr: "En attente de Homebox : vérifiez la configuration de l'intégration.",
+    de: 'Warte auf Homebox: prüfe die Konfiguration der Integration.',
+    es: 'Esperando a Homebox: compruebe la configuración de la integración.',
   },
 };
 
-// A live tile references a feature by its external_id: read it from the
-// discovery payload itself, so the widget and the device never disagree.
-function featureExternalId(gladys, config, blueprint, category) {
-  const device = blueprint.buildDevice(gladys, config);
-  return device.features.find((feature) => feature.category === category).external_id;
+const pick = (table, language) => table[language] ?? table.en;
+const cut = (text, max) => (text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`);
+
+/** The coming events, the soonest first. */
+export function upcomingEvents(summary, language) {
+  const events = [...summary.overdue, ...summary.upcoming].map((entry) => ({
+    daysLeft: entry.daysLeft,
+    title: cut(`${entry.name} · ${entry.item}`, 60),
+    subtitle: when(entry.daysLeft, language),
+    badge: {
+      text: cut(pick(TEXT.maintenance_badge, language), 16),
+      color: entry.daysLeft < 0 ? WIDGET_COLORS.DANGER : WIDGET_COLORS.WARNING,
+    },
+  }));
+  for (const item of summary.warranties) {
+    events.push({
+      daysLeft: item.daysLeft,
+      title: cut(`${pick(TEXT.warranty_title, language)} · ${item.name}`, 60),
+      subtitle: when(item.daysLeft, language),
+      badge: { text: cut(pick(TEXT.warranty_badge, language), 16), color: WIDGET_COLORS.INFO },
+    });
+  }
+  return events
+    .sort((a, b) => a.daysLeft - b.daysLeft)
+    .slice(0, MAX_ITEMS)
+    .map(({ title, subtitle, badge }) => ({ title, subtitle, badge }));
 }
 
-function plugConnectionStatus(gladys, config) {
-  const { transport, degraded } = plug.transport(gladys, config);
-  const { value, color } = TRANSPORT_STATUS[transport];
-  if (degraded) {
+export function buildContent(hub, { language = 'en' } = {}) {
+  const summary = hub.summary;
+  if (!summary) {
     return {
-      value: { en: `${value.en} (degraded mode)`, fr: `${value.fr} (mode dégradé)` },
-      color: WIDGET_COLORS.WARNING,
+      ttl_seconds: 60,
+      components: [{ type: 'text', variant: 'body', text: pick(TEXT.waiting, language) }],
     };
   }
-  return { value, color };
+  const due = summary.overdue.length + summary.upcoming.length;
+  const events = upcomingEvents(summary, language);
+  const value = {
+    type: 'value',
+    label: pick(TEXT.value, language),
+    value: Math.round(summary.value),
+    icon: 'credit-card',
+  };
+  const symbol = currencySymbol(summary.currency);
+  if (symbol) {
+    value.unit = symbol;
+  }
+  return {
+    // The hub nudges the widget after every read.
+    ttl_seconds: 900,
+    components: [
+      { type: 'value', label: pick(TEXT.items, language), value: summary.items, icon: 'package' },
+      value,
+      {
+        type: 'value',
+        label: pick(TEXT.warranties, language),
+        value: summary.warranties.length,
+        icon: 'shield',
+        color: summary.warranties.length > 0 ? WIDGET_COLORS.WARNING : WIDGET_COLORS.SUCCESS,
+      },
+      {
+        type: 'value',
+        label: pick(TEXT.maintenance, language),
+        value: due,
+        icon: 'tool',
+        color:
+          summary.overdue.length > 0
+            ? WIDGET_COLORS.DANGER
+            : due > 0
+              ? WIDGET_COLORS.WARNING
+              : WIDGET_COLORS.SUCCESS,
+      },
+      events.length > 0
+        ? { type: 'card-list', display: 'list', items: events }
+        : { type: 'text', variant: 'caption', text: pick(TEXT.nothing, language) },
+    ],
+  };
 }
 
 export const WIDGETS = {
-  [DEMO_STATUS_WIDGET]: {
-    // `settings` holds the per-instance values of the declared `settings`
-    // (none here); `language` and `units` are those of the user viewing the
-    // dashboard, for the values you format yourself. Multi-language objects
-    // (`{ en, fr }`) are picked by the core, like everywhere else.
-    async get(gladys, { config }) {
-      logger.debug(`onWidgetGet <- ${DEMO_STATUS_WIDGET}`);
-      return {
-        // Reload policy: the computed parts below only change with the
-        // config, and index.js nudges the widget on every (re)connection and
-        // config update (see refreshWidgets) — the TTL is just a safety net.
-        ttl_seconds: 300,
-        components: [
-          // Device-bound tiles: LIVE, they follow the published states over
-          // the core's real-time path. No TTL, no nudge involved.
-          {
-            type: 'value',
-            label: { en: 'Temperature', fr: 'Température' },
-            icon: 'thermometer',
-            device_feature: featureExternalId(
-              gladys,
-              config,
-              weatherStation,
-              DEVICE_FEATURE_CATEGORIES.TEMPERATURE_SENSOR,
-            ),
-          },
-          {
-            type: 'value',
-            label: { en: 'Office plug', fr: 'Prise du bureau' },
-            icon: 'zap',
-            device_feature: featureExternalId(
-              gladys,
-              config,
-              plug,
-              DEVICE_FEATURE_CATEGORIES.ENERGY_SENSOR,
-            ),
-          },
-          // Computed rows: what the integration knows that no device feature
-          // carries. Served from the core cache until the TTL or a nudge.
-          {
-            type: 'status',
-            items: [
-              {
-                label: { en: 'Plug connection', fr: 'Connexion de la prise' },
-                icon: 'wifi',
-                ...plugConnectionStatus(gladys, config),
-              },
-              {
-                label: { en: 'Observed location', fr: 'Position observée' },
-                icon: 'map-pin',
-                value: `${config.latitude.toFixed(2)}, ${config.longitude.toFixed(2)}`,
-                color: WIDGET_COLORS.NEUTRAL,
-              },
-            ],
-          },
-          // `params` are declared HERE and sent back as-is: the handler never
-          // receives user input (a dashboard can hang on a public wall).
-          {
-            type: 'button',
-            label: { en: 'Identify the light', fr: 'Identifier la lampe' },
-            icon: 'eye',
-            style: 'secondary',
-            action: {
-              key: DEMO_STATUS_ACTIONS.IDENTIFY_LIGHT,
-              params: { device: light.deviceExternalId(gladys) },
-            },
-          },
-        ],
-      };
-    },
-
-    // Resolve an optional toast (string or multi-language object, ≤ 200
-    // characters). After a successful action the core drops the cached
-    // content and every open dashboard refetches it: no nudge needed.
-    async action(gladys, { actionKey, params, config }) {
-      logger.info(`onWidgetAction <- ${DEMO_STATUS_WIDGET}.${actionKey}`);
-      if (actionKey === DEMO_STATUS_ACTIONS.IDENTIFY_LIGHT) {
-        return identifyDevice(gladys, params.device, config);
-      }
-      // Throwing acks the action as failed: the message reaches the user.
-      throw new Error(`Unknown widget action: ${actionKey}`);
-    },
+  [WIDGET_KEY]: {
+    get: (hub, request) => buildContent(hub, request),
   },
 };
-
-/**
- * Freshness nudge: ask the core to re-pull every widget NOW instead of
- * waiting for the content TTL. Call it when you KNOW a computed content
- * changed (here: the config, which drives the plug transport and the observed
- * location) — and after every (re)connection, since the nudges are
- * fire-and-forget: rate-limited core-side to 1 per 10 s per widget, dropped
- * silently while disconnected.
- */
-export function refreshWidgets(gladys) {
-  for (const key of Object.keys(WIDGETS)) {
-    gladys.requestWidgetRefresh(key);
-  }
-}

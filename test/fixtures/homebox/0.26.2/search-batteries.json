@@ -1,0 +1,45 @@
+{
+  "page": -1,
+  "pageSize": 10,
+  "total": 1,
+  "items": [
+    {
+      "id": "4887c3c4-6da5-4935-aa80-cfd3ceafa04c",
+      "assetId": "000-006",
+      "name": "Batteries AA",
+      "description": "",
+      "quantity": 24,
+      "insured": false,
+      "archived": false,
+      "createdAt": "2026-10-17T10:56:35.788138488Z",
+      "updatedAt": "2026-10-17T10:56:35.814247197Z",
+      "purchasePrice": 0.5,
+      "parent": {
+        "id": "ebc97df5-5bdb-4dfe-b265-b0017db2d7d6",
+        "assetId": "",
+        "name": "Kitchen",
+        "description": "",
+        "quantity": 1,
+        "insured": false,
+        "archived": false,
+        "createdAt": "2026-10-17T10:56:34.738528794Z",
+        "updatedAt": "2026-10-17T10:56:34.738528997Z",
+        "purchasePrice": 0,
+        "tags": [],
+        "soldDate": ""
+      },
+      "entityType": {
+        "id": "a4721de4-a3bb-486f-8133-73cc02f06641",
+        "name": "Item",
+        "description": "",
+        "isLocation": false,
+        "icon": "",
+        "createdAt": "2026-10-17T10:56:35.520757805Z",
+        "updatedAt": "2026-10-17T10:56:35.520757992Z"
+      },
+      "tags": [],
+      "soldDate": ""
+    }
+  ],
+  "totalPrice": 0.5
+}

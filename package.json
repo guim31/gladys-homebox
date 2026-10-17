@@ -1,8 +1,8 @@
 {
-  "name": "gladys-integration-template-js",
+  "name": "gladys-homebox",
   "version": "1.0.0",
   "private": true,
-  "description": "Official starter template to build an external integration for Gladys Assistant with the JavaScript SDK.",
+  "description": "Homebox integration for Gladys Assistant: your home inventory, warranties and maintenance.",
   "type": "module",
   "main": "index.js",
   "scripts": {
