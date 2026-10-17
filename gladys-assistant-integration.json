@@ -1,177 +1,497 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Homebox",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Your Homebox home inventory: items, total value, warranties ending and maintenance due.",
+    "fr": "Votre inventaire Homebox : objets, valeur totale, garanties qui expirent, entretiens à faire.",
+    "de": "Dein Homebox-Inventar: Gegenstände, Gesamtwert, ablaufende Garantien, fällige Wartungen.",
+    "es": "Su inventario Homebox: objetos, valor total, garantías que vencen y mantenimientos pendientes."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-homebox:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-homebox/main/cover.png",
+  "categories": ["services"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Connect Homebox",
+        "fr": "Connecter Homebox",
+        "de": "Homebox verbinden",
+        "es": "Conectar Homebox"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Enter the address of your Homebox server (port 7745 by default). On Homebox 0.26 or later, create an API key in your Homebox profile and paste it below. On an older Homebox, enter the e-mail and password of a Homebox user instead. The integration only reads your inventory.",
+        "fr": "Saisissez l'adresse de votre serveur Homebox (port 7745 par défaut). Avec Homebox 0.26 ou plus récent, créez une clé d'API dans votre profil Homebox et collez-la ci-dessous. Avec un Homebox plus ancien, saisissez plutôt l'e-mail et le mot de passe d'un utilisateur Homebox. L'intégration ne fait que lire votre inventaire.",
+        "de": "Gib die Adresse deines Homebox-Servers ein (standardmäßig Port 7745). Ab Homebox 0.26 erstellst du in deinem Homebox-Profil einen API-Schlüssel und fügst ihn unten ein. Bei einem älteren Homebox gibst du stattdessen E-Mail und Passwort eines Homebox-Benutzers ein. Die Integration liest dein Inventar nur.",
+        "es": "Introduzca la dirección de su servidor Homebox (puerto 7745 por defecto). Con Homebox 0.26 o posterior, cree una clave de API en su perfil de Homebox y péguela abajo. Con un Homebox más antiguo, introduzca en su lugar el correo y la contraseña de un usuario de Homebox. La integración solo lee su inventario."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://homebox.software/en/",
+          "label": {
+            "en": "Homebox documentation",
+            "fr": "Documentation de Homebox",
+            "de": "Homebox-Dokumentation",
+            "es": "Documentación de Homebox"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "url",
+      "type": "string",
+      "label": {
+        "en": "Homebox address",
+        "fr": "Adresse de Homebox",
+        "de": "Homebox-Adresse",
+        "es": "Dirección de Homebox"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
+      "placeholder": {
+        "en": "e.g. 192.168.1.50:7745",
+        "fr": "ex. 192.168.1.50:7745",
+        "de": "z. B. 192.168.1.50:7745",
+        "es": "p. ej. 192.168.1.50:7745"
+      },
       "required": true,
-      "default": 48.8566,
-      "min": -90,
+      "default": ""
+    },
+    {
+      "key": "api_key",
+      "type": "secret",
+      "label": {
+        "en": "API key (Homebox 0.26+)",
+        "fr": "Clé d'API (Homebox 0.26+)",
+        "de": "API-Schlüssel (Homebox 0.26+)",
+        "es": "Clave de API (Homebox 0.26+)"
+      },
+      "description": {
+        "en": "Profile → API keys in Homebox. Leave empty to use the e-mail and password.",
+        "fr": "Profil → Clés d'API dans Homebox. Laissez vide pour utiliser l'e-mail et le mot de passe.",
+        "de": "Profil → API-Schlüssel in Homebox. Leer lassen, um E-Mail und Passwort zu nutzen.",
+        "es": "Perfil → Claves de API en Homebox. Déjelo vacío para usar el correo y la contraseña."
+      },
+      "required": false
+    },
+    {
+      "key": "username",
+      "type": "string",
+      "label": {
+        "en": "E-mail (without API key)",
+        "fr": "E-mail (sans clé d'API)",
+        "de": "E-Mail (ohne API-Schlüssel)",
+        "es": "Correo (sin clave de API)"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "password",
+      "type": "secret",
+      "label": {
+        "en": "Password (without API key)",
+        "fr": "Mot de passe (sans clé d'API)",
+        "de": "Passwort (ohne API-Schlüssel)",
+        "es": "Contraseña (sin clave de API)"
+      },
+      "required": false
+    },
+    {
+      "key": "warranty_days",
+      "type": "number",
+      "label": {
+        "en": "Warranty ending within (days)",
+        "fr": "Garantie expirant sous (jours)",
+        "de": "Garantie endet innerhalb (Tage)",
+        "es": "Garantía que vence en (días)"
+      },
+      "description": {
+        "en": "A warranty counts as ending soon this many days before its end date.",
+        "fr": "Une garantie compte comme bientôt expirée ce nombre de jours avant sa fin.",
+        "de": "Eine Garantie gilt so viele Tage vor ihrem Ende als bald ablaufend.",
+        "es": "Una garantía cuenta como a punto de vencer este número de días antes de su fin."
+      },
+      "required": false,
+      "default": 30,
+      "min": 1,
+      "max": 365
+    },
+    {
+      "key": "maintenance_days",
+      "type": "number",
+      "label": {
+        "en": "Upcoming maintenance within (days)",
+        "fr": "Entretien à venir sous (jours)",
+        "de": "Anstehende Wartung innerhalb (Tage)",
+        "es": "Mantenimiento próximo en (días)"
+      },
+      "required": false,
+      "default": 7,
+      "min": 0,
       "max": 90
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "key": "location_devices",
+      "type": "boolean",
+      "label": {
+        "en": "One device per location",
+        "fr": "Un appareil par emplacement",
+        "de": "Ein Gerät pro Ort",
+        "es": "Un dispositivo por ubicación"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "description": {
+        "en": "Number of items and value of each top-level location, sub-locations included.",
+        "fr": "Nombre d'objets et valeur de chaque emplacement principal, sous-emplacements compris.",
+        "de": "Anzahl der Gegenstände und Wert jedes Hauptorts, Unterorte eingeschlossen.",
+        "es": "Número de objetos y valor de cada ubicación principal, sububicaciones incluidas."
+      },
+      "required": false,
+      "default": false
     },
     {
-      "key": "unit",
+      "key": "refresh_minutes",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "label": {
+        "en": "Read Homebox every",
+        "fr": "Lire Homebox toutes les",
+        "de": "Homebox lesen alle",
+        "es": "Leer Homebox cada"
+      },
       "required": false,
-      "default": "celsius",
+      "default": "15",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "5",
+          "label": {
+            "en": "5 minutes",
+            "fr": "5 minutes",
+            "de": "5 Minuten",
+            "es": "5 minutos"
+          }
+        },
+        {
+          "value": "15",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "60 minutes",
+            "fr": "60 minutes",
+            "de": "60 Minuten",
+            "es": "60 minutos"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of names and messages",
+        "fr": "Langue des noms et messages",
+        "de": "Sprache der Namen und Meldungen",
+        "es": "Idioma de nombres y mensajes"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Feature names are set when a device is added to Gladys.",
+        "fr": "Les noms des fonctionnalités sont fixés à l'ajout d'un appareil dans Gladys.",
+        "de": "Die Namen der Funktionen werden beim Hinzufügen eines Geräts zu Gladys festgelegt.",
+        "es": "Los nombres de las funciones se fijan al añadir un dispositivo a Gladys."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
       "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
-      "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+      "key": "warranty_expiring",
+      "label": {
+        "en": "Warranty ending soon",
+        "fr": "Garantie bientôt expirée",
+        "de": "Garantie läuft bald ab",
+        "es": "Garantía a punto de vencer"
       },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
-        },
-        {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
-        }
-      ],
+      "description": {
+        "en": "The warranty of an item enters the window set in the configuration (once per item).",
+        "fr": "La garantie d'un objet entre dans la fenêtre réglée dans la configuration (une fois par objet).",
+        "de": "Die Garantie eines Gegenstands erreicht das in der Konfiguration eingestellte Fenster (einmal pro Gegenstand).",
+        "es": "La garantía de un objeto entra en la ventana fijada en la configuración (una vez por objeto)."
+      },
       "variables": [
         {
-          "key": "target",
+          "key": "item",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Item",
+            "fr": "Objet",
+            "de": "Gegenstand",
+            "es": "Objeto"
+          }
+        },
+        {
+          "key": "location",
+          "type": "string",
+          "label": {
+            "en": "Location",
+            "fr": "Emplacement",
+            "de": "Ort",
+            "es": "Ubicación"
+          }
+        },
+        {
+          "key": "expires",
+          "type": "string",
+          "label": {
+            "en": "End date",
+            "fr": "Date de fin",
+            "de": "Enddatum",
+            "es": "Fecha de fin"
+          }
+        },
+        {
+          "key": "days_left",
+          "type": "number",
+          "label": {
+            "en": "Days left",
+            "fr": "Jours restants",
+            "de": "Verbleibende Tage",
+            "es": "Días restantes"
+          }
+        }
+      ]
+    },
+    {
+      "key": "maintenance_due",
+      "label": {
+        "en": "Maintenance due",
+        "fr": "Entretien à faire",
+        "de": "Wartung fällig",
+        "es": "Mantenimiento pendiente"
+      },
+      "description": {
+        "en": "A scheduled maintenance reaches its date in Homebox without being completed (once per maintenance).",
+        "fr": "Un entretien planifié atteint sa date dans Homebox sans être terminé (une fois par entretien).",
+        "de": "Eine geplante Wartung erreicht in Homebox ihr Datum, ohne erledigt zu sein (einmal pro Wartung).",
+        "es": "Un mantenimiento programado alcanza su fecha en Homebox sin completarse (una vez por mantenimiento)."
+      },
+      "variables": [
+        {
+          "key": "maintenance",
+          "type": "string",
+          "label": {
+            "en": "Maintenance",
+            "fr": "Entretien",
+            "de": "Wartung",
+            "es": "Mantenimiento"
+          }
+        },
+        {
+          "key": "item",
+          "type": "string",
+          "label": {
+            "en": "Item",
+            "fr": "Objet",
+            "de": "Gegenstand",
+            "es": "Objeto"
+          }
+        },
+        {
+          "key": "scheduled",
+          "type": "string",
+          "label": {
+            "en": "Scheduled date",
+            "fr": "Date prévue",
+            "de": "Geplantes Datum",
+            "es": "Fecha prevista"
+          }
+        },
+        {
+          "key": "days_late",
+          "type": "number",
+          "label": {
+            "en": "Days late",
+            "fr": "Jours de retard",
+            "de": "Tage überfällig",
+            "es": "Días de retraso"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "find_item",
+      "label": {
+        "en": "Find an item in Homebox",
+        "fr": "Chercher un objet dans Homebox",
+        "de": "Gegenstand in Homebox suchen",
+        "es": "Buscar un objeto en Homebox"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "Where an item is stored and how many there are, for a stock check or a message.",
+        "fr": "Où est rangé un objet et en quelle quantité, pour vérifier un stock ou l'annoncer.",
+        "de": "Wo ein Gegenstand liegt und wie viele es gibt, für eine Bestandsprüfung oder Nachricht.",
+        "es": "Dónde se guarda un objeto y cuántos hay, para comprobar un stock o enviar un mensaje."
+      },
+      "timeout_seconds": 30,
       "fields": [
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "key": "name",
+          "type": "string",
+          "required": true,
+          "label": {
+            "en": "Item name",
+            "fr": "Nom de l'objet",
+            "de": "Name des Gegenstands",
+            "es": "Nombre del objeto"
+          },
+          "placeholder": {
+            "en": "e.g. AA batteries",
+            "fr": "ex. Piles AA",
+            "de": "z. B. AA-Batterien",
+            "es": "p. ej. Pilas AA"
+          }
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
+          "key": "found",
           "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "label": {
+            "en": "Found",
+            "fr": "Trouvé",
+            "de": "Gefunden",
+            "es": "Encontrado"
+          }
+        },
+        {
+          "key": "matches",
+          "type": "number",
+          "label": {
+            "en": "Matching items",
+            "fr": "Objets correspondants",
+            "de": "Passende Gegenstände",
+            "es": "Objetos coincidentes"
+          }
+        },
+        {
+          "key": "item",
+          "type": "string",
+          "label": {
+            "en": "Item",
+            "fr": "Objet",
+            "de": "Gegenstand",
+            "es": "Objeto"
+          }
+        },
+        {
+          "key": "location",
+          "type": "string",
+          "label": {
+            "en": "Location",
+            "fr": "Emplacement",
+            "de": "Ort",
+            "es": "Ubicación"
+          }
+        },
+        {
+          "key": "quantity",
+          "type": "number",
+          "label": {
+            "en": "Quantity",
+            "fr": "Quantité",
+            "de": "Menge",
+            "es": "Cantidad"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "summary",
+      "label": {
+        "en": "Home inventory",
+        "fr": "Inventaire de la maison",
+        "de": "Hausinventar",
+        "es": "Inventario del hogar"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Items, value, warranties ending and maintenance due, the soonest first.",
+        "fr": "Objets, valeur, garanties qui expirent et entretiens à faire, au plus tôt d'abord.",
+        "de": "Gegenstände, Wert, ablaufende Garantien und fällige Wartungen, das Nächste zuerst.",
+        "es": "Objetos, valor, garantías que vencen y mantenimientos, lo más próximo primero."
+      },
+      "icon": "package"
     }
   ]
 }

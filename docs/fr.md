@@ -1,67 +1,132 @@
-# Template de démonstration
+# Homebox
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Suivez l'inventaire de votre maison dans Gladys grâce à
+[Homebox](https://github.com/sysadminsmedia/homebox), le logiciel d'inventaire
+et de rangement auto-hébergé : combien d'objets vous possédez, ce qu'ils
+valent, les garanties qui expirent bientôt et les entretiens à faire. Tout
+reste sur votre réseau local : Gladys parle directement à Homebox, et se
+contente de le lire.
 
-## Ce que vous obtenez
+Testée contre de vrais serveurs Homebox, 0.26.2 et 0.21.0 (l'image Docker
+officielle). Vos retours sont les bienvenus sur le forum Gladys.
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+## Prérequis
+
+- Gladys Assistant 5.1 ou plus récent.
+- Un serveur Homebox joignable depuis la machine Gladys, sur le port 7745 par
+  défaut, ou derrière un proxy inverse.
+- Avec Homebox 0.26 ou plus récent : une clé d'API (Homebox → votre profil →
+  Clés d'API). Avec un Homebox plus ancien : l'e-mail et le mot de passe d'un
+  utilisateur Homebox. L'intégration voit l'inventaire (le « groupe ») de cet
+  utilisateur.
 
 ## Configuration
 
 1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+2. Dans **Adresse de Homebox**, saisissez l'adresse IP du serveur, par exemple
+   `192.168.1.50` : l'intégration utilise alors le port 7745. Ajoutez un port
+   si le vôtre diffère (`192.168.1.50:3100`). Derrière un proxy inverse,
+   saisissez l'adresse complète (`https://example.org/homebox`).
+3. Collez une **clé d'API**, ou remplissez **E-mail** et **Mot de passe**. La
+   clé d'API l'emporte si les deux sont remplis.
+4. **Garantie expirant sous (jours)** : une garantie compte comme bientôt
+   expirée ce nombre de jours avant sa fin (30 par défaut).
+5. **Entretien à venir sous (jours)** : jusqu'où un entretien planifié compte
+   comme à venir (7 par défaut).
+6. **Un appareil par emplacement** (désactivé par défaut) ajoute un appareil
+   pour chaque emplacement principal de Homebox.
+7. **Lire Homebox toutes les** : 5, 15 (par défaut), 30 ou 60 minutes.
+8. **Langue des noms et messages** fixe les noms des fonctionnalités (figés à
+   l'ajout de l'appareil), les textes et les dates des variables de scène.
+   Français par défaut.
+9. Enregistrez, puis utilisez **Tester la connexion** : elle affiche la
+   version de Homebox et le nombre d'objets et d'emplacements.
+10. Dans l'onglet **Découverte**, ajoutez les appareils à suivre.
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+## Appareils
 
-## Actions
+**Homebox** (un appareil pour votre inventaire) :
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+| Fonctionnalité             | Valeur                                                             |
+| -------------------------- | ------------------------------------------------------------------ |
+| Objets                     | nombre d'objets, hors objets archivés                              |
+| Emplacements               | nombre d'emplacements                                              |
+| Valeur totale              | prix d'achat × quantité de chaque objet, dans la monnaie du groupe |
+| Garanties bientôt expirées | objets dont la garantie se termine dans la fenêtre réglée          |
+| Entretiens en retard       | entretiens planifiés dont la date est passée                       |
+| Entretiens à venir         | entretiens planifiés dans la fenêtre réglée                        |
+| Prochain entretien         | nom, objet et date du prochain entretien, ou « Aucun »             |
+| Prochaine fin de garantie  | objet et date de la prochaine garantie qui expire, ou « Aucun »    |
 
-## Scènes
+Gladys a une unité pour l'euro, le dollar et la livre sterling ; une autre
+monnaie apparaît dans le nom de la fonctionnalité, par exemple « Valeur totale
+(CHF) ». Les garanties à vie ne finissent jamais ; les garanties déjà
+terminées ne sont pas comptées.
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+**Un emplacement** (option) : **Objets** (nombre d'objets rangés là,
+sous-emplacements compris) et **Valeur**. Seuls les emplacements principaux
+ont un appareil.
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+## Widget de tableau de bord
 
-## Tableau de bord
+**Inventaire de la maison** : quatre tuiles (objets, valeur, garanties,
+entretiens à faire) et la liste de ce qui arrive, au plus tôt d'abord :
+entretiens en retard (en rouge), entretiens à venir, garanties qui expirent.
+Lecture seule.
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+## Déclencheurs de scène
+
+- **Garantie bientôt expirée** : la garantie d'un objet entre dans la fenêtre
+  réglée. Une fois par objet et date de fin. Variables : objet, emplacement,
+  date de fin, jours restants.
+- **Entretien à faire** : un entretien planifié atteint sa date sans être
+  terminé. Une fois par entretien. Variables : entretien, objet, date prévue,
+  jours de retard.
+
+La première lecture après l'installation est silencieuse : ce qui est déjà en
+attente est affiché sur l'appareil, pas annoncé. Les déclencheurs partent à la
+première lecture qui suit le changement (après minuit, dans l'intervalle
+réglé).
+
+## Actions de scène
+
+**Chercher un objet dans Homebox** : donnez un nom (`Piles AA`) ; l'action lit
+Homebox et renvoie **Trouvé**, **Objets correspondants**, **Objet**,
+**Emplacement** (le chemin complet, `Garage / Étagère`) et **Quantité**. Le nom
+exact l'emporte, puis les noms qui le contiennent ; les objets archivés sont
+ignorés.
+
+## Exemples de scènes
+
+- **Rappel d'entretien** : déclencheur « Entretien à faire » → envoyer un
+  message « C'est l'heure de {{triggerEvent.data.maintenance}} sur
+  {{triggerEvent.data.item}} ».
+- **Garantie** : déclencheur « Garantie bientôt expirée » → message « La
+  garantie de {{triggerEvent.data.item}} se termine le
+  {{triggerEvent.data.expires}} ».
+- **Vérifier un stock** : chaque dimanche à 10 h → « Chercher un objet dans
+  Homebox » (`Piles AA`) → continuer seulement si la quantité est inférieure à
+  4 → message « Plus beaucoup de piles AA (rangées dans …) ».
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **« Accès refusé »** : vérifiez la clé d'API (elle a pu expirer, ou être
+  supprimée dans Homebox), ou l'e-mail et le mot de passe. Les clés d'API
+  n'existent qu'à partir de Homebox 0.26 : sur une version plus ancienne,
+  utilisez l'e-mail et le mot de passe.
+- **« Homebox ne répond pas »** : vérifiez l'adresse et le port depuis la
+  machine Gladys. Le conteneur est sur un réseau en pont : `localhost` désigne
+  le conteneur lui-même, saisissez plutôt l'adresse IP du serveur.
+- **« Cette adresse ne répond pas comme Homebox »** : une page de connexion de
+  proxy répond à la place de Homebox. Saisissez l'adresse de Homebox lui-même,
+  ou laissez passer la machine Gladys.
+- Pour plus de détails dans les journaux de l'intégration, réglez
+  `LOG_LEVEL=debug`.
+
+## Limites
+
+- Lecture seule : l'intégration ne modifie jamais votre inventaire.
+- Chaque lecture fait environ cinq requêtes (dont l'export CSV de tout
+  l'inventaire) : gardez un intervalle long sur un très gros inventaire.
+- Un seul groupe Homebox, celui de la clé d'API ou de l'utilisateur.
+- Sans lien avec le projet Homebox.

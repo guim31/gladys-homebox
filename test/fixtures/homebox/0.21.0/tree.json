@@ -1,0 +1,101 @@
+[
+  {
+    "id": "a565c20f-948e-4e06-8e42-674fc6790221",
+    "name": "Attic",
+    "type": "location",
+    "children": []
+  },
+  {
+    "id": "bc645b32-c416-46d2-8890-c6e5daf4dcad",
+    "name": "Basement",
+    "type": "location",
+    "children": []
+  },
+  {
+    "id": "39cb415d-7501-4423-adf4-c82c9af25d43",
+    "name": "Bathroom",
+    "type": "location",
+    "children": []
+  },
+  {
+    "id": "4a048250-a7db-4580-a536-2332ca9556c3",
+    "name": "Bedroom",
+    "type": "location",
+    "children": []
+  },
+  {
+    "id": "2c4f59a5-866e-4807-b7ba-ad0458c056d8",
+    "name": "Garage",
+    "type": "location",
+    "children": [
+      {
+        "id": "b6ae4b11-6bc5-4723-8b65-39f779dd1e13",
+        "name": "Workbench shelf",
+        "type": "location",
+        "children": [
+          {
+            "id": "f0fbe7c1-2243-4062-879a-dc177d590451",
+            "name": "Cordless drill",
+            "type": "item",
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "aef0e0cc-2624-4b29-b28e-eb9a4ff4f3f7",
+        "name": "Lawn mower",
+        "type": "item",
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "2259fd7b-a509-4601-b016-31a2c9ba9a73",
+    "name": "Kitchen",
+    "type": "location",
+    "children": [
+      {
+        "id": "658b8be6-c91a-4a5e-a172-2789fd7e129e",
+        "name": "Batteries AA",
+        "type": "item",
+        "children": []
+      },
+      {
+        "id": "2dbc65b7-9000-474c-9a80-1c268c17b4d1",
+        "name": "Broken toaster",
+        "type": "item",
+        "children": []
+      },
+      {
+        "id": "3d49a718-d270-48b5-b698-a59558cbadef",
+        "name": "Cast iron pan",
+        "type": "item",
+        "children": []
+      },
+      {
+        "id": "c4741469-d975-4fdd-b3af-58fc1c33e502",
+        "name": "Dishwasher",
+        "type": "item",
+        "children": []
+      },
+      {
+        "id": "0b32de73-5d1c-499d-bc54-77efd96eb785",
+        "name": "Electric kettle, \"glass\"",
+        "type": "item",
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "d02f958f-58cc-48a8-994e-b9ec53c6e6bb",
+    "name": "Living Room",
+    "type": "location",
+    "children": []
+  },
+  {
+    "id": "80ace761-f6a9-4184-9b1a-a6964dd07b65",
+    "name": "Office",
+    "type": "location",
+    "children": []
+  }
+]

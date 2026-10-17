@@ -1,0 +1,32 @@
+[
+  {
+    "id": "e21292d6-f4aa-44db-9b4f-8d587937149a",
+    "completedDate": "",
+    "scheduledDate": "2026-10-13",
+    "name": "Oil the chuck",
+    "description": "",
+    "cost": "0",
+    "itemName": "Cordless drill",
+    "itemID": "f0fbe7c1-2243-4062-879a-dc177d590451"
+  },
+  {
+    "id": "03154a8e-5f36-4a94-9386-08839f25b916",
+    "completedDate": "",
+    "scheduledDate": "2026-10-20",
+    "name": "Replace brushes",
+    "description": "Carbon brushes",
+    "cost": "0",
+    "itemName": "Cordless drill",
+    "itemID": "f0fbe7c1-2243-4062-879a-dc177d590451"
+  },
+  {
+    "id": "0818db37-7e27-4dc6-9ef3-0d8e3e43e41d",
+    "completedDate": "",
+    "scheduledDate": "2026-11-26",
+    "name": "Descale",
+    "description": "",
+    "cost": "0",
+    "itemName": "Electric kettle, \"glass\"",
+    "itemID": "0b32de73-5d1c-499d-bc54-77efd96eb785"
+  }
+]

@@ -1,0 +1,9 @@
+HB.import_ref,HB.location,HB.labels,HB.asset_id,HB.archived,HB.url,HB.name,HB.quantity,HB.description,HB.insured,HB.notes,HB.purchase_price,HB.purchase_from,HB.purchase_time,HB.manufacturer,HB.model_number,HB.serial_number,HB.lifetime_warranty,HB.warranty_expires,HB.warranty_details,HB.sold_to,HB.sold_price,HB.sold_time,HB.sold_notes
+,Garage / Workbench shelf,,000-001,false,/item/f0fbe7c1-2243-4062-879a-dc177d590451,Cordless drill,1,,false,,149.9,,,Makita,,,false,2026-10-29,,,0,,
+,Garage,,000-002,false,/item/aef0e0cc-2624-4b29-b28e-eb9a4ff4f3f7,Lawn mower,1,,false,,399,,,,,,false,2027-01-15,,,0,,
+,Kitchen,,000-003,false,/item/0b32de73-5d1c-499d-bc54-77efd96eb785,"Electric kettle, ""glass""",1,,false,"line one
+line two",25,,,,,,false,2026-09-27,,,0,,
+,Kitchen,,000-004,false,/item/3d49a718-d270-48b5-b698-a59558cbadef,Cast iron pan,2,,false,,60,,,,,,true,,,,0,,
+,Kitchen,,000-005,false,/item/658b8be6-c91a-4a5e-a172-2789fd7e129e,Batteries AA,24,,false,,0.5,,,,,,false,,,,0,,
+,Kitchen,,000-006,true,/item/2dbc65b7-9000-474c-9a80-1c268c17b4d1,Broken toaster,1,,false,,30,,,,,,false,2026-10-22,,,0,,
+,Kitchen,,000-007,false,/item/c4741469-d975-4fdd-b3af-58fc1c33e502,Dishwasher,1,,false,,549.99,,,,,,false,2026-11-16,,,0,,
