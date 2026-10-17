@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-17
+
 ### Added
 
 - A Homebox device: number of items and locations, total value in the currency
@@ -22,3 +24,6 @@ the notes of the version's GitHub Release.
 - Scene action "Find an item in Homebox": location and quantity of an item.
 - API key (Homebox 0.26+) or e-mail and password; Homebox 0.21 to 0.26.
 - Texts and documentation in English, French, German and Spanish.
+
+[Unreleased]: https://github.com/guim31/gladys-homebox/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-homebox/releases/tag/v1.0.0
