@@ -112,7 +112,7 @@ export const TEST_TEXT = {
   fr: (version, items, locations) =>
     `Homebox ${version} répond : ${items} objet(s) dans ${locations} emplacement(s).`,
   de: (version, items, locations) =>
-    `Homebox ${version} antwortet: ${items} Gegenstände an ${locations} Orten.`,
+    `Homebox ${version} antwortet. Gegenstände: ${items}, Orte: ${locations}.`,
   es: (version, items, locations) =>
     `Homebox ${version} responde: ${items} objeto(s) en ${locations} ubicación(es).`,
 };

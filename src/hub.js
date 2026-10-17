@@ -111,7 +111,12 @@ export class Hub {
 
   async start(config) {
     const saved = await this.store.load();
-    this.notified = typeof saved.groupId === 'string' ? saved : null;
+    const valid =
+      typeof saved.groupId === 'string' &&
+      Array.isArray(saved.warranty) &&
+      Array.isArray(saved.maintenance);
+    // A damaged file is a new baseline, not a crash on every read.
+    this.notified = valid ? saved : null;
     await this.reconfigure(config);
   }
 
@@ -149,7 +154,10 @@ export class Hub {
       }
     }
     if (this.client && !this.refreshTimer) {
-      this.refreshTimer = setInterval(() => this.refresh(), config.refreshMinutes * 60_000);
+      this.refreshTimer = setInterval(
+        () => this.refresh().catch((err) => logger.error('Read failed', err)),
+        config.refreshMinutes * 60_000,
+      );
       this.refreshTimer.unref?.();
     }
     if (linkChanged || previous.locationDevices !== config.locationDevices) {
@@ -189,7 +197,12 @@ export class Hub {
     this.refreshing = (async () => {
       do {
         this.refreshAgain = false;
-        await this.#refreshOnce();
+        try {
+          await this.#refreshOnce();
+        } catch (err) {
+          // Never ends the loop: a read queued meanwhile (new address) still runs.
+          logger.error('Read failed', err);
+        }
       } while (this.refreshAgain && !this.stopped);
     })().finally(() => {
       this.refreshing = null;
@@ -239,7 +252,11 @@ export class Hub {
     this.data = data;
     this.#recover();
     await this.#update();
-    await this.#announce();
+    if (client !== this.client || !this.summary) {
+      // Reconfigured meanwhile: the read of the new link takes over.
+      return;
+    }
+    await this.#announce(this.summary);
     await this.updateConnectionStatus();
   }
 
@@ -265,7 +282,7 @@ export class Hub {
       logger.debug(`Homebox still failing: ${err.message}`);
     }
     this.failure = kind;
-    if (kind === 'invalid') {
+    if (kind === 'invalid' || kind === 'not_found') {
       this.version = null;
     }
   }
@@ -288,8 +305,7 @@ export class Hub {
    * due since the last read. The first read of a Homebox group is a silent
    * baseline: installing the integration announces nothing already pending.
    */
-  async #announce() {
-    const summary = this.summary;
+  async #announce(summary) {
     const warranty = new Map(
       summary.warranties.map((item) => [`${item.id}|${item.warranty}`, item]),
     );
@@ -298,10 +314,14 @@ export class Hub {
     const fresh = (map, done) => [...map].filter(([key]) => !done.includes(key));
     const events = known
       ? [
-          ...fresh(warranty, known.warranty).map(([, item]) => this.#warrantyEvent(item)),
-          ...fresh(maintenance, known.maintenance).map(([, entry]) =>
-            this.#maintenanceEvent(entry),
-          ),
+          ...fresh(warranty, known.warranty).map(([key, item]) => [
+            ...this.#warrantyEvent(item),
+            key,
+          ]),
+          ...fresh(maintenance, known.maintenance).map(([key, entry]) => [
+            ...this.#maintenanceEvent(entry),
+            key,
+          ]),
         ]
       : [];
     if (events.length > MAX_EVENTS_PER_READ) {
@@ -309,17 +329,22 @@ export class Hub {
         `${events.length} warranties or maintenance due at once: ${MAX_EVENTS_PER_READ} announced`,
       );
     }
-    for (const [key, data] of events.slice(0, MAX_EVENTS_PER_READ)) {
+    // An event Gladys did not take (disconnected, restarting) is not
+    // recorded: the next read fires it again.
+    const failed = new Set();
+    for (const [trigger, data, mark] of events.slice(0, MAX_EVENTS_PER_READ)) {
       try {
-        await this.gladys.publishSceneEvent(key, data);
+        await this.gladys.publishSceneEvent(trigger, data);
       } catch (err) {
-        logger.warn(`Cannot fire ${key}: ${err.message}`);
+        failed.add(mark);
+        logger.warn(`Cannot fire ${trigger}: ${err.message}`);
       }
     }
+    const kept = (map) => [...map.keys()].filter((key) => !failed.has(key)).sort();
     const next = {
       groupId: summary.groupId,
-      warranty: [...warranty.keys()].sort(),
-      maintenance: [...maintenance.keys()].sort(),
+      warranty: kept(warranty),
+      maintenance: kept(maintenance),
     };
     if (JSON.stringify(next) !== JSON.stringify(this.notified)) {
       this.notified = next;

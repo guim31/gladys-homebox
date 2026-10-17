@@ -161,14 +161,16 @@ export class HomeboxClient {
     if (!this.username || !this.password) {
       throw new HomeboxError('unauthorized', 'No API key nor e-mail and password');
     }
-    const fresh = !this.token;
-    if (fresh) {
+    if (!this.token) {
       await this.login();
     }
-    let answer = await this.#send('GET', path, { auth: this.token });
-    if (answer.status === 401 && !fresh) {
-      this.token = null;
-      await this.login();
+    const sent = this.token;
+    let answer = await this.#send('GET', path, { auth: sent });
+    if (answer.status === 401) {
+      // Expired: log in again, unless a parallel request already did.
+      if (this.token === sent) {
+        await this.login();
+      }
       answer = await this.#send('GET', path, { auth: this.token });
     }
     if (!answer.ok) {
@@ -222,7 +224,15 @@ export class HomeboxClient {
   /** Try the 0.26 path, then the older one (remembered once found). */
   async #either(entities, items) {
     if (this.flavor) {
-      return this.#get(this.flavor === 'entities' ? entities : items);
+      try {
+        return await this.#get(this.flavor === 'entities' ? entities : items);
+      } catch (err) {
+        if (!(err instanceof HomeboxError && err.kind === 'not_found')) {
+          throw err;
+        }
+        // Homebox upgraded (or downgraded) while running: look again.
+        this.flavor = null;
+      }
     }
     try {
       const answer = await this.#get(entities);

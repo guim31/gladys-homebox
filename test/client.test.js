@@ -72,3 +72,32 @@ test('no credential in an error message', async () => {
   assert.ok(!error.message.includes('hunter2'));
   assert.ok(!error.message.includes(EMAIL));
 });
+
+test('Homebox upgraded from 0.21 to 0.26 while running: the 0.26 paths are found again', async () => {
+  const old = createHomebox({ version: '0.21.0' });
+  const modern = createHomebox();
+  let current = old;
+  const hb = new HomeboxClient({
+    url: HOST,
+    username: EMAIL,
+    password: PASSWORD,
+    fetch: (...args) => current.fetch(...args),
+    timeout: 200,
+  });
+  await hb.exportCsv();
+  assert.equal(hb.flavor, 'items');
+  current = modern;
+  assert.match(await hb.exportCsv(), /HB\.parent_import_ref/);
+  assert.equal(hb.flavor, 'entities');
+});
+
+test('two requests refused at once: a single new login, both succeed', async () => {
+  const server = createHomebox();
+  const hb = client(server, { username: EMAIL, password: PASSWORD });
+  await hb.group();
+  server.expireTokens();
+  const [stats, group] = await Promise.all([hb.statistics(), hb.group()]);
+  assert.equal(stats.totalItems, 6);
+  assert.equal(group.currency, 'USD');
+  assert.equal(server.state.logins, 2);
+});

@@ -290,3 +290,49 @@ test('onPoll answers; onDeviceCreated publishes every state again', async (t) =>
   await createAll(world.fake);
   assert.equal(world.fake.states.length, count * 2);
 });
+
+test('an event Gladys refused is fired again at the next read', async (t) => {
+  const clock = { now: NOW };
+  const world = await createWorld({ clock });
+  t.after(() => world.app.stop());
+  const original = world.gladys.publishSceneEvent.bind(world.gladys);
+  let refuse = true;
+  t.mock.method(world.gladys, 'publishSceneEvent', (...args) => {
+    if (refuse) {
+      return Promise.reject(new Error('not connected'));
+    }
+    return original(...args);
+  });
+  clock.now = NOW + 3 * DAY;
+  await world.hub.refresh();
+  assert.equal(world.fake.sceneEvents.length, 0);
+  refuse = false;
+  await world.hub.refresh();
+  assert.deepEqual(
+    world.fake.sceneEvents.map((e) => e.data.maintenance),
+    ['Replace brushes'],
+  );
+  await world.hub.refresh();
+  assert.equal(world.fake.sceneEvents.length, 1);
+});
+
+test('a damaged state file is a new silent baseline, not a crash', async (t) => {
+  const store = new MemoryStore({ groupId: '7e3b9dd7-f28e-45db-b241-01910e7dd1d8' });
+  const world = await createWorld({ store });
+  t.after(() => world.app.stop());
+  assert.equal(world.fake.connectionStatus.connected, true);
+  assert.equal(world.fake.sceneEvents.length, 0);
+  assert.equal(store.data.warranty.length, 2);
+});
+
+test('a new address saved during a read: no crash, the new link is read', async (t) => {
+  const world = await createWorld();
+  t.after(() => world.app.stop());
+  const reading = world.hub.refresh();
+  await world.fake.configUpdated({ url: HOST, username: EMAIL, password: PASSWORD });
+  await reading;
+  await settle(20);
+  assert.equal(world.server.state.logins, 1, 'the new link logged in');
+  assert.equal(world.fake.connectionStatus.connected, true);
+  assert.ok(world.hub.summary);
+});
