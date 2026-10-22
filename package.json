@@ -1,6 +1,6 @@
 {
   "name": "gladys-homebox",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Homebox integration for Gladys Assistant: your home inventory, warranties and maintenance.",
   "type": "module",
